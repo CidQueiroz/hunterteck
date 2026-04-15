@@ -1,0 +1,17 @@
+# Dependências para o Command Center Streamlit
+# Execute: pip install -r requirements_app.txt
+
+# Streamlit - Framework para interface web
+streamlit==1.28.1
+
+# Pandas - Manipulação de dados e dataframes
+pandas==2.1.1
+
+# Dependências do pipeline (herança do requirements do microsserviço)
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+typing-extensions==4.8.0
+pydantic==2.5.0
+python-json-logger==2.0.7
+python-dotenv==1.0.0

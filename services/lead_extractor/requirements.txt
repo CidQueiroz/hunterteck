@@ -1,0 +1,19 @@
+# Dependências do Microsserviço de Extração de Leads
+
+# HTTP e Web Scraping
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Tipagem e Validação
+typing-extensions==4.8.0
+pydantic==2.5.0
+
+# Logging e Monitoramento
+python-json-logger==2.0.7
+
+# Banco de Dados (SQLite integrado no Python)
+# Nenhuma dependência adicional necessária
+
+# Utilitários
+python-dotenv==1.0.0

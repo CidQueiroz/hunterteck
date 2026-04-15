@@ -1,0 +1,25 @@
+# Dockerfile for HunterTeck Frontend (Streamlit)
+FROM python:3.11-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml README.md ./
+RUN pip install -e ".[streamlit,groq]"
+
+COPY . .
+
+RUN useradd -m -u 1000 hunterteck && chown -R hunterteck:hunterteck /app
+USER hunterteck
+
+WORKDIR /app/frontend
+EXPOSE 8501
+
+CMD ["streamlit", "run", "../app_hunter.py", "--server.port=8501", "--server.address=0.0.0.0"]

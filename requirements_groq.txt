@@ -1,0 +1,14 @@
+# Dependências para integração com Groq (Free Tier)
+# Execute: pip install -r requirements_groq.txt
+
+# Cliente Groq oficial
+groq==0.4.1
+
+# Dependências do email_generator (já existentes)
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+typing-extensions==4.8.0
+pydantic==2.5.0
+python-json-logger==2.0.7
+python-dotenv==1.0.0

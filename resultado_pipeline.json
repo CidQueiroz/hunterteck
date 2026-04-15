@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-04-15T11:53:24.997294",
+  "query": "restaurantes",
+  "cidade": "São Paulo",
+  "estado": "SP",
+  "etapas": {
+    "extracao": {
+      "status": "sucesso",
+      "total_leads": 3,
+      "persistidos": 0,
+      "leads": [
+        {
+          "nome": "Restaurante São Paulo Grill",
+          "website": "https://www.spaulgrill.com.br",
+          "endereco": "São Paulo, SP",
+          "cidade": "São Paulo",
+          "estado": "SP",
+          "ramo": "restaurantes",
+          "fonte": "dados_estruturados",
+          "email": "contato@spaulgrill.com.br",
+          "telefone": "113333-4444",
+          "status": "novo",
+          "data_coleta": "2026-04-15 11:53:25.524034",
+          "ultima_atualizacao": "2026-04-15 11:53:25.524036"
+        },
+        {
+          "nome": "Pizzaria Bella Italia",
+          "website": "https://www.bellaitalia.com.br",
+          "endereco": "São Paulo, SP",
+          "cidade": "São Paulo",
+          "estado": "SP",
+          "ramo": "restaurantes",
+          "fonte": "dados_estruturados",
+          "email": "reservas@bellaitalia.com.br",
+          "telefone": "113344-5555",
+          "status": "novo",
+          "data_coleta": "2026-04-15 11:53:25.524045",
+          "ultima_atualizacao": "2026-04-15 11:53:25.524046"
+        },
+        {
+          "nome": "Casa Da Comida Nordestina",
+          "website": "https://www.casanordestina.com.br",
+          "endereco": "São Paulo, SP",
+          "cidade": "São Paulo",
+          "estado": "SP",
+          "ramo": "restaurantes",
+          "fonte": "dados_estruturados",
+          "email": "info@casanordestina.com.br",
+          "telefone": "113355-6666",
+          "status": "novo",
+          "data_coleta": "2026-04-15 11:53:25.524050",
+          "ultima_atualizacao": "2026-04-15 11:53:25.524051"
+        }
+      ],
+      "detalhes": {
+        "status": "sucesso",
+        "mensagem": "0/3 empresas persistidas",
+        "total": 3,
+        "sucesso": 0,
+        "timestamp": "2026-04-15T11:53:25.525822"
+      }
+    },
+    "validacao": {
+      "status": "sucesso",
+      "leads_validos": [],
+      "estatisticas": {
+        "total_original": 3,
+        "total_validas": 0,
+        "invalidas": 0,
+        "duplicatas": 3,
+        "limpas": 3,
+        "taxa_validade": 0.0
+      }
+    }
+  }
+}
