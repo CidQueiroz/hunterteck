@@ -6,10 +6,14 @@ e coleta dados de contato validados.
 
 import logging
 import random
+import re
+import requests
+from bs4 import BeautifulSoup
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
+from .config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -92,78 +96,174 @@ class Pessoa:
 class LocalizadorPessoas:
     """Localiza e extrai dados de pessoas em empresas."""
     
-    # Nomes genéricos para roles comuns (podem ser customizados)
-    ROLES_COMUNS = {
-        'ceo': ['CEO', 'Chief Executive Officer', 'Presidente'],
-        'cto': ['CTO', 'Chief Technology Officer', 'Diretor de Tecnologia'],
-        'cfo': ['CFO', 'Chief Financial Officer', 'Diretor Financeiro'],
-        'sales': ['Sales Director', 'VP Sales', 'Head of Sales', 'Diretor Comercial'],
-        'marketing': ['Head of Marketing', 'CMO', 'Marketing Manager'],
-        'product': ['Product Manager', 'Head of Product', 'Gerente de Produto'],
-        'hr': ['HR Manager', 'Head of People', 'Gerente de RH'],
-    }
-    
-    def __init__(self):
-        """Inicializa o localizador de pessoas."""
-        logger.info("Localizador de pessoas inicializado")
-    
     def encontrar_decisores(
         self,
         empresa_nome: str,
         dominio_website: str,
         setor: Optional[str] = None,
-        limite: int = 10
+        limite: int = 10,
+        email_empresa: Optional[str] = None
     ) -> List[Pessoa]:
         """
-        Encontra decisores de uma empresa.
+        Encontra decisores de uma empresa usando o padrão Chain of Responsibility.
         
-        Em produção, integraria com LinkedIn API, Hunter.io, Clearbit, etc.
-        Neste exemplo, simula com dados realistas.
-        
-        Args:
-            empresa_nome: Nome da empresa
-            dominio_website: Domínio (para construir emails)
-            setor: Setor de negócio (opcional)
-            limite: Número máximo de pessoas
-            
-        Returns:
-            Lista de Pessoa
+        Ordem de prioridade (Fallback):
+        1. E-mail fornecido pelo MS1 (Orgânico)
+        2. Hunter.io API
+        3. Apollo.io API
+        4. Scraper Local (BeautifulSoup)
         """
-        logger.info(f"Procurando decisores em {empresa_nome}")
+        logger.info(f"Processando lead real de {empresa_nome}")
         
         pessoas = []
+        email_encontrado = None
+        fonte_email = 'extracao_organica'
         
-        # Gerar pessoas simuladas (em produção, seria consulta real)
-        roles_priority = [
-            ('CEO', 'ceo', 0),
-            ('CTO', 'cto', 0),
-            ('Sales Director', 'sales', 1),
-            ('Marketing Manager', 'marketing', 2),
-            ('Product Manager', 'product', 2),
+        # 0. Privilégio ao MS1 (se já trouxe o e-mail validado)
+        if email_empresa and "@" in email_empresa:
+            email_encontrado = email_empresa
+        
+        # 1. Camada 1: Hunter.io
+        if not email_encontrado:
+            email_encontrado = self._buscar_hunter(dominio_website)
+            if email_encontrado:
+                fonte_email = 'hunter_api'
+        
+        # 2. Camada 2: Apollo.io
+        if not email_encontrado:
+            email_encontrado = self._buscar_apollo(dominio_website)
+            if email_encontrado:
+                fonte_email = 'apollo_api'
+        
+        # 3. Camada 3: Scraper Local Profundo
+        if not email_encontrado:
+            email_encontrado = self._buscar_local(dominio_website)
+            if email_encontrado:
+                fonte_email = 'scraper_profundo'
+        
+        # Veredito
+        if email_encontrado:
+            pessoa = Pessoa(
+                nome="Equipe",
+                cargo="Diretoria",
+                empresa_nome=empresa_nome,
+                email=email_encontrado,
+                linkedin_url=None,
+                titulo="C-Level", # Garante processamento no orquestrador
+                nivel_hierarquia=0,
+                confianca_email=1.0,
+                fonte=fonte_email
+            )
+            pessoas.append(pessoa)
+        else:
+            logger.warning(f"Empresa {empresa_nome} descartada no MS4: Descartado após falha nas 3 camadas de busca.")
+        
+        return pessoas
+
+    def _buscar_hunter(self, dominio: str) -> Optional[str]:
+        """Integração com Hunter.io Domain Search API."""
+        if not Config.HUNTER_API_KEY:
+            logger.debug("Hunter.io pulado: API Key não configurada.")
+            return None
+            
+        logger.debug(f"[Camada 1] Buscando no Hunter.io por: {dominio}")
+        try:
+            url = f"https://api.hunter.io/v2/domain-search?domain={dominio}&api_key={Config.HUNTER_API_KEY}"
+            resp = requests.get(url, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                emails = data.get('data', {}).get('emails', [])
+                if emails:
+                    email = emails[0].get('value')
+                    logger.info(f"Hunter.io encontrou o e-mail: {email}")
+                    return email
+        except Exception as e:
+            logger.error(f"Erro ao consultar Hunter.io para {dominio}: {e}")
+        return None
+
+    def _buscar_apollo(self, dominio: str) -> Optional[str]:
+        """Integração com Apollo.io Organization Search API."""
+        if not Config.APOLLO_API_KEY:
+            logger.debug("Apollo.io pulado: API Key não configurada.")
+            return None
+            
+        logger.debug(f"[Camada 2] Buscando no Apollo.io por: {dominio}")
+        try:
+            url = "https://api.apollo.io/v1/organizations/enrich"
+            headers = {
+                'Cache-Control': 'no-cache',
+                'Content-Type': 'application/json'
+            }
+            payload = {
+                'api_key': Config.APOLLO_API_KEY,
+                'domain': dominio
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                org = data.get('organization', {})
+                email = org.get('primary_domain_email') or org.get('primary_email')
+                if email:
+                    logger.info(f"Apollo.io encontrou o e-mail: {email}")
+                    return email
+        except Exception as e:
+            logger.error(f"Erro ao consultar Apollo.io para {dominio}: {e}")
+        return None
+
+    def _buscar_local(self, dominio: str) -> Optional[str]:
+        """Scraper profundo usando BeautifulSoup nas rotas raízes e contato."""
+        logger.debug(f"[Camada 3] Iniciando Scraper Profundo local para: {dominio}")
+        
+        padrao_email = re.compile(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+')
+        headers = {'User-Agent': Config.USER_AGENT}
+        
+        base_urls = [
+            f"https://{dominio}",
+            f"http://{dominio}",
+            f"https://www.{dominio}",
+            f"http://www.{dominio}"
         ]
         
-        for i, (role, role_key, nivel) in enumerate(roles_priority[:limite]):
-            # Gerar email realista
-            nome_primeiro = self._gerar_primeiro_nome(role)
-            nome_sobrenome = self._gerar_sobrenome()
-            email = self._gerar_email(nome_primeiro, nome_sobrenome, dominio_website)
-            
-            pessoa = Pessoa(
-                nome=f"{nome_primeiro} {nome_sobrenome}",
-                cargo=role,
-                empresa_nome=empresa_nome,
-                email=email,
-                linkedin_url=f"https://linkedin.com/in/{nome_primeiro}{nome_sobrenome}".lower(),
-                titulo=self._mapear_titulo(role),
-                nivel_hierarquia=nivel,
-                confianca_email=0.75 + random.uniform(0, 0.25),
-                fonte='linkedin'
-            )
-            
-            pessoas.append(pessoa)
+        rotas = ["", "/contato", "/contact", "/sobre", "/about"]
         
-        logger.info(f"Encontradas {len(pessoas)} possíveis decisores")
-        return pessoas
+        # Testar qual base_url funciona primeiro
+        url_valida = None
+        for b_url in base_urls:
+            try:
+                resp = requests.get(b_url, headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    url_valida = b_url
+                    break
+            except Exception:
+                continue
+                
+        if not url_valida:
+            logger.debug(f"Falha ao conectar no domínio {dominio} nas tentativas HTTPS/HTTP.")
+            return None
+            
+        # Varrer rotas
+        for rota in rotas:
+            alvo = f"{url_valida}{rota}"
+            try:
+                resp = requests.get(alvo, headers=headers, timeout=8)
+                if resp.status_code == 200:
+                    soup = BeautifulSoup(resp.text, 'html.parser')
+                    texto = soup.get_text(separator=' ')
+                    emails_encontrados = padrao_email.findall(texto)
+                    
+                    for email in emails_encontrados:
+                        email_lower = email.lower()
+                        # Filtrar emails de assets (ex: png@2x, sentry@..., wixpress@...)
+                        if any(x in email_lower for x in ['.png', '.jpg', 'sentry', 'wixpress', 'example']):
+                            continue
+                        logger.info(f"Scraper Profundo encontrou o e-mail na rota {rota}: {email_lower}")
+                        return email_lower
+            except Exception as e:
+                logger.debug(f"Erro no Scraper Profundo acessando {alvo}: {e}")
+                
+        return None
+        
+
     
     def validar_email(
         self,
@@ -249,65 +349,15 @@ class LocalizadorPessoas:
             pessoas = self.encontrar_decisores(
                 empresa_nome=info.get('nome'),
                 dominio_website=info.get('dominio'),
-                setor=info.get('setor')
+                setor=info.get('setor'),
+                email_empresa=info.get('email')
             )
             todas_pessoas.extend(pessoas)
         
         logger.info(f"Total de {len(todas_pessoas)} pessoas encontradas")
         return todas_pessoas
     
-    @staticmethod
-    def _mapear_titulo(cargo: str) -> str:
-        """Mapeia cargo para título simples."""
-        cargo_lower = cargo.lower()
-        
-        if 'ceo' in cargo_lower or 'president' in cargo_lower:
-            return 'C-Level'
-        elif 'director' in cargo_lower or 'vice' in cargo_lower:
-            return 'Executive'
-        elif 'manager' in cargo_lower or 'senior' in cargo_lower:
-            return 'Senior'
-        else:
-            return 'Active'
-    
-    @staticmethod
-    def _gerar_primeiro_nome(role: str) -> str:
-        """Gera primeiro nome realista baseado no role."""
-        nomes = {
-            ('CEO', 'ceo'): ['João', 'Roberto', 'Carlos', 'Paulo', 'Francisco'],
-            ('CTO', 'cto'): ['André', 'Bruno', 'Diego', 'Eduardo', 'Fernando'],
-            ('Sales', 'sales'): ['Marcos', 'Lucas', 'Miguel', 'Rafael', 'Rodrigo'],
-            ('Marketing', 'marketing'): ['Isabela', 'Juliana', 'Camila', 'Fernanda', 'Patricia'],
-            ('Product', 'product'): ['Ana', 'Marina', 'Beatriz', 'Carla', 'Daniela'],
-        }
-        
-        for chaves, lista_nomes in nomes.items():
-            if role.lower() in [k.lower() for k in chaves]:
-                return random.choice(lista_nomes)
-        
-        return random.choice(['João', 'Maria', 'Pedro', 'Ana'])
-    
-    @staticmethod
-    def _gerar_sobrenome() -> str:
-        """Gera sobrenome realista."""
-        sobrenomes = [
-            'Silva', 'Santos', 'Oliveira', 'Sousa', 'Costa',
-            'Ferreira', 'Pereira', 'Gomes', 'Martins', 'Carvalho',
-            'Alves', 'Rocha', 'Dias', 'Barbosa', 'Lopes'
-        ]
-        return random.choice(sobrenomes)
-    
-    @staticmethod
-    def _gerar_email(primeiro: str, sobrenome: str, dominio: str) -> str:
-        """Gera email realista."""
-        padroes = [
-            f"{primeiro.lower()}.{sobrenome.lower()}",
-            f"{primeiro.lower()}",
-            f"{primeiro[0].lower()}{sobrenome.lower()}",
-        ]
-        
-        padrao = random.choice(padroes)
-        return f"{padrao}@{dominio}"
+
 
 
 # Exemplo de uso

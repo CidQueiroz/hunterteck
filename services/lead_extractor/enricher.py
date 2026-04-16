@@ -90,124 +90,16 @@ class EnriquecedorDados:
         
         dominio = self._extrair_dominio(empresa.website)
         
-        # Tentar diferentes fontes de dados
-        try:
-            # Fonte 1: Clearbit (simulado para demo)
-            dados = self._enriquecer_clearbit(dominio, empresa.nome)
-            if dados:
-                return dados
-        except Exception as e:
-            logger.debug(f"Clearbit falhou: {e}")
-        
-        try:
-            # Fonte 2: Hunter (simulado para demo)
-            dados = self._enriquecer_hunter(dominio)
-            if dados:
-                return dados
-        except Exception as e:
-            logger.debug(f"Hunter falhou: {e}")
-        
-        # Retornar dados mínimos se nada funcionou
-        return self._enriquecer_minimo(dominio, empresa.nome)
-    
-    def _enriquecer_clearbit(self, dominio: str, nome_empresa: str) -> Optional[DadosEnriquecidos]:
-        """
-        Simula enriquecimento com Clearbit.
-        Em produção, usar API real: https://clearbit.com
-        
-        Args:
-            dominio: Domínio da empresa
-            nome_empresa: Nome da empresa
-            
-        Returns:
-            DadosEnriquecidos ou None
-        """
-        logger.debug(f"Tentando Clearbit para {dominio}")
-        
-        # Base de dados simulada de empresas conhecidas
-        dados_conhecidos = {
-            'google.com': {
-                'receita_anual': '280B',
-                'num_funcionarios': '190k+',
-                'ano_fundacao': 1998,
-                'setor_industria': 'Technology',
-                'linkedin_url': 'https://linkedin.com/company/google',
-                'descricao': 'Search Engine and Cloud Services'
-            },
-            'microsoft.com': {
-                'receita_anual': '200B',
-                'num_funcionarios': '220k+',
-                'ano_fundacao': 1975,
-                'setor_industria': 'Technology',
-                'linkedin_url': 'https://linkedin.com/company/microsoft',
-                'descricao': 'Software and Cloud Solutions'
-            },
-            'amazon.com': {
-                'receita_anual': '575B',
-                'num_funcionarios': '1.5M+',
-                'ano_fundacao': 1994,
-                'setor_industria': 'E-commerce, Cloud',
-                'linkedin_url': 'https://linkedin.com/company/amazon',
-                'descricao': 'E-commerce and Cloud Computing'
-            }
-        }
-        
-        if dominio in dados_conhecidos:
-            dados_dict = dados_conhecidos[dominio]
-            tags = [dados_dict.get('setor_industria', '').lower()]
-            
-            return DadosEnriquecidos(
-                empresa_id=0,  # Será preenchido após inserção no DB
-                dominio_website=dominio,
-                receita_anual=dados_dict.get('receita_anual'),
-                num_funcionarios=dados_dict.get('num_funcionarios'),
-                ano_fundacao=dados_dict.get('ano_fundacao'),
-                setor_industria=dados_dict.get('setor_industria'),
-                linkedin_url=dados_dict.get('linkedin_url'),
-                descricao=dados_dict.get('descricao'),
-                tags=tags,
-                fonte_dados='clearbit'
-            )
-        
-        return None
-    
-    def _enriquecer_hunter(self, dominio: str) -> Optional[DadosEnriquecidos]:
-        """
-        Simula enriquecimento com Hunter.io.
-        Em produção: https://hunter.io
-        """
-        logger.debug(f"Tentando Hunter para {dominio}")
-        
-        # Simulation: retornar padrão ou dados aleatórios
-        # Em produção, seria uma chamada real à API
-        
-        return None
-    
-    def _enriquecer_minimo(self, dominio: str, nome_empresa: str) -> DadosEnriquecidos:
-        """
-        Enriquecimento mínimo com dados inferidos/padrão.
-        
-        Args:
-            dominio: Domínio da empresa
-            nome_empresa: Nome da empresa
-            
-        Returns:
-            DadosEnriquecidos com dados mínimos
-        """
-        logger.debug(f"Enriquecimento mínimo para {dominio}")
-        
-        # Inferir setor pela extensão de domínio ou keywords
-        setor = self._inferir_setor(nome_empresa, dominio)
-        
+        # Sem chaves de API reais (Clearbit/Hunter/Snovio), retornamos apenas o lead cru intacto.
         return DadosEnriquecidos(
             empresa_id=0,
             dominio_website=dominio,
             receita_anual=None,
             num_funcionarios=None,
             ano_fundacao=None,
-            setor_industria=setor,
+            setor_industria=empresa.ramo.title() if empresa.ramo else 'Serviços',
             linkedin_url=f"https://linkedin.com/company/{dominio.split('.')[0]}",
-            tags=[setor.lower()],
+            tags=[empresa.ramo.lower()] if empresa.ramo else ['serviços'],
             fonte_dados='manual'
         )
     
@@ -241,10 +133,17 @@ class EnriquecedorDados:
             
             except Exception as e:
                 logger.error(f"Erro ao enriquecer {empresa.nome}: {e}")
-                # Retornar enriquecimento mínimo mesmo em erro
-                dados = self._enriquecer_minimo(
-                    self._extrair_dominio(empresa.website),
-                    empresa.nome
+                # Retornar intacto mesmo em erro
+                dados = DadosEnriquecidos(
+                    empresa_id=0,
+                    dominio_website=self._extrair_dominio(empresa.website),
+                    receita_anual=None,
+                    num_funcionarios=None,
+                    ano_fundacao=None,
+                    setor_industria=empresa.ramo.title() if empresa.ramo else 'Serviços',
+                    linkedin_url=f"https://linkedin.com/company/{self._extrair_dominio(empresa.website).split('.')[0]}",
+                    tags=[empresa.ramo.lower()] if empresa.ramo else ['serviços'],
+                    fonte_dados='manual'
                 )
                 dados_enriquecidos.append(dados)
         
@@ -258,38 +157,7 @@ class EnriquecedorDados:
         website = website.split('/')[0]
         return website
     
-    @staticmethod
-    def _inferir_setor(nome_empresa: str, dominio: str) -> str:
-        """
-        Infere o setor pelo nome ou domínio.
-        
-        Args:
-            nome_empresa: Nome da empresa
-            dominio: Domínio
-            
-        Returns:
-            Setor inferido
-        """
-        nome_lower = nome_empresa.lower()
-        dominio_lower = dominio.lower()
-        
-        # Keywords para detectar setor
-        palavras_chave = {
-            'tech': ['tech', 'software', 'app', 'digital', 'cyber'],
-            'saúde': ['health', 'medical', 'clinic', 'dental', 'pharma', 'médic', 'dentista'],
-            'varejo': ['store', 'shop', 'retail', 'loja', 'e-commerce'],
-            'alimentos': ['food', 'restaurant', 'cafe', 'restaurant', 'padaria'],
-            'imóvel': ['real', 'estate', 'imobil', 'property'],
-            'educação': ['school', 'university', 'educ', 'academy', 'curso'],
-            'fitness': ['gym', 'fitness', 'sport', 'academia'],
-        }
-        
-        for setor, palavras in palavras_chave.items():
-            for palavra in palavras:
-                if palavra in nome_lower or palavra in dominio_lower:
-                    return setor.title()
-        
-        return 'Serviços'  # Default
+
 
 
 # Exemplo de uso

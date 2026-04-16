@@ -233,10 +233,10 @@ def validate_database() -> Tuple[bool, List[str]]:
             print_ok(f"Banco de dados: {Config.DATABASE_PATH}")
             
             # Verificar tabelas
-            conn = db.get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            tables = cursor.fetchall()
+            with db.conexao() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                tables = cursor.fetchall()
             
             if tables:
                 print_ok(f"Tabelas criadas: {len(tables)}")
@@ -244,8 +244,6 @@ def validate_database() -> Tuple[bool, List[str]]:
                     print(f"  - {table[0]}")
             else:
                 print_warning("Nenhuma tabela encontrada")
-            
-            conn.close()
             
         except Exception as e:
             print_error(f"Erro ao conectar BD: {str(e)}")

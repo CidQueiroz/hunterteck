@@ -29,56 +29,52 @@ logger = logging.getLogger(__name__)
 # MAPEAMENTO DE CAMPANHAS
 # ============================================================================
 
-MAPEAMENTO_CAMPANHAS: Dict[str, Dict[str, str]] = {
-    "Clínicas Odontológicas em Macaé, RJ": {
-        "query": "clínicas odontológicas",
-        "produto": "GestaoRPD",
-        "cidade": "Macaé",
-        "estado": "RJ",
-        "descricao": "Gestão de consultórios e clínicas odontológicas"
+MAPEAMENTO_PRODUTOS = {
+    "GestaoRPD": {
+        "Clínicas Odontológicas": {"query": "clínicas odontológicas", "descricao": "Gestão e automação de agendamentos para consultórios odontológicos."},
+        "Clínicas Médicas e Policlínicas": {"query": "clínicas médicas", "descricao": "Digitalização de prontuários e gestão de atendimento ao paciente."},
+        "Clínicas de Psicologia": {"query": "clínicas de psicologia", "descricao": "Gestão de agendas e controle de pacotes de sessões."},
+        "Clínicas de Fisioterapia": {"query": "clínicas de fisioterapia", "descricao": "Acompanhamento de evolução de pacientes e controle financeiro."},
+        "Clínicas Veterinárias": {"query": "clínicas veterinárias", "descricao": "Gestão de histórico clínico animal e controle de estoque de medicamentos."},
+        "Escritórios de Contabilidade": {"query": "escritórios de contabilidade", "descricao": "Automação de rotinas e gestão de documentos de clientes."},
+        "Escritórios de Advocacia": {"query": "escritórios de advocacia", "descricao": "Gestão de prazos, processos e atendimento de clientes legais."},
+        "Consultorias de RH": {"query": "consultorias de recursos humanos", "descricao": "Triagem de currículos e gestão de processos seletivos."},
+        "Imobiliárias": {"query": "imobiliárias", "descricao": "Gestão de carteira de imóveis e automação de contratos."}
     },
-    "Escolas de Idiomas em Macaé, RJ": {
-        "query": "escolas de idiomas",
-        "produto": "SenseiDB",
-        "cidade": "Macaé",
-        "estado": "RJ",
-        "descricao": "Plataforma educacional para escolas de idiomas"
+    "SenseiDB": {
+        "Escolas de Idiomas": {"query": "escolas de idiomas", "descricao": "Agentes IA para conversação e automação do suporte ao aluno."},
+        "Cursos Preparatórios": {"query": "cursos preparatórios", "descricao": "Motor de busca inteligente (RAG) para apostilas e simulados."},
+        "Treinamento Corporativo": {"query": "empresas de treinamento corporativo", "descricao": "Plataforma de capacitação automatizada para funcionários."},
+        "Escolas Particulares (Ensino Básico)": {"query": "escolas particulares", "descricao": "Centralização da comunicação entre pais, alunos e secretaria."},
+        "Faculdades e Universidades": {"query": "faculdades privadas", "descricao": "Atendimento automatizado para matrículas e suporte acadêmico."},
+        "Autoescolas": {"query": "autoescolas", "descricao": "Automação de agendamentos de aulas práticas e teóricas."},
+        "Cursos Técnicos e Profissionalizantes": {"query": "cursos técnicos", "descricao": "Gestão de trilhas de aprendizagem e certificações."}
     },
-    "Cursos Preparatórios em Macaé, RJ": {
-        "query": "cursos preparatórios",
-        "produto": "SenseiDB",
-        "cidade": "Macaé",
-        "estado": "RJ",
-        "descricao": "Gestão de cursos preparatórios e educacionais"
+    "CaçaPreço": {
+        "Varejo e Supermercados": {"query": "supermercados e mercados", "descricao": "Monitoramento de concorrência e precificação dinâmica."},
+        "Farmácias e Drogarias": {"query": "farmácias e drogarias", "descricao": "Análise de preços de medicamentos e produtos de perfumaria."},
+        "Lojas de Materiais de Construção": {"query": "lojas de materiais de construção", "descricao": "Inteligência de mercado para cotação de insumos e ferramentas."},
+        "Lojas de Autopeças": {"query": "lojas de autopeças", "descricao": "Mapeamento de preços para reposição de peças automotivas."},
+        "Lojas de Eletrônicos e Informática": {"query": "lojas de eletrônicos", "descricao": "Monitoramento de margens em equipamentos de alta depreciação."},
+        "Distribuidoras de Bebidas e Alimentos": {"query": "distribuidoras de bebidas", "descricao": "Otimização de preços para compras em atacado e varejo."},
+        "Pet Shops e Agropecuárias": {"query": "pet shops", "descricao": "Análise competitiva de rações e medicamentos veterinários."}
     },
-    "Treinamento Corporativo no Rio de Janeiro": {
-        "query": "treinamento corporativo",
-        "produto": "SenseiDB",
-        "cidade": "Rio de Janeiro",
-        "estado": "RJ",
-        "descricao": "Programas de treinamento corporativo"
+    "PapoDados": {
+        "Indústrias Offshore (Óleo e Gás)": {"query": "empresas offshore óleo e gás", "descricao": "Análise complexa de relatórios técnicos e dados de perfuração."},
+        "Empresas de Logística e Transporte": {"query": "empresas de logística e transporte", "descricao": "Roteirização e análise preditiva de frotas e combustível."},
+        "Empresas de Engenharia Civil": {"query": "construtoras e engenharia", "descricao": "Cruzamento de dados de plantas, orçamentos e cronogramas."},
+        "Indústrias de Manufatura": {"query": "indústrias de manufatura", "descricao": "Monitoramento de OEE (Eficiência Global do Equipamento) e falhas."},
+        "Operadores Portuários": {"query": "operadores portuários logísticos", "descricao": "Otimização de fluxo de carga e análise de manifestos alfandegários."},
+        "Distribuidores de Insumos Industriais": {"query": "distribuidoras de insumos industriais", "descricao": "Previsão de demanda e gestão inteligente de grandes estoques."}
     },
-    "Varejo e Supermercados em Macaé, RJ": {
-        "query": "varejo supermercados",
-        "produto": "CaçaPreço",
-        "cidade": "Macaé",
-        "estado": "RJ",
-        "descricao": "Inteligência de preços para varejo"
-    },
-    "Indústrias Offshore em Macaé, RJ": {
-        "query": "indústrias offshore",
-        "produto": "PapoDados",
-        "cidade": "Macaé",
-        "estado": "RJ",
-        "descricao": "Análise de dados para indústria offshore"
-    },
-    "Academias e Nutricionistas em Macaé, RJ": {
-        "query": "academias nutricionistas",
-        "produto": "BioCoach",
-        "cidade": "Macaé",
-        "estado": "RJ",
-        "descricao": "Plataforma de wellness e nutrição"
-    },
+    "BioCoach": {
+        "Academias de Ginástica e Musculação": {"query": "academias de ginástica", "descricao": "Geração automatizada de treinos via IA e retenção de alunos."},
+        "Nutricionistas e Clínicas de Nutrição": {"query": "clínicas de nutrição", "descricao": "Cálculo de macronutrientes via visão computacional e recordatório IA."},
+        "Estúdios de Crossfit": {"query": "estúdios de crossfit", "descricao": "Monitoramento de carga de treino (WODs) e recuperação muscular."},
+        "Clínicas de Estética e Spas": {"query": "clínicas de estética", "descricao": "Acompanhamento de protocolos estéticos e histórico do cliente."},
+        "Empresas de Saúde Ocupacional": {"query": "empresas de saúde ocupacional", "descricao": "Mapeamento de ergonomia e prevenção de lesões no trabalho."},
+        "Assessorias Esportivas": {"query": "assessorias esportivas", "descricao": "Análise de planilhas de corrida e periodização inteligente."}
+    }
 }
 
 
@@ -86,7 +82,7 @@ MAPEAMENTO_CAMPANHAS: Dict[str, Dict[str, str]] = {
 # FUNCIONALIDADES DE BANCO DE DADOS
 # ============================================================================
 
-def obter_ultimos_leads(limite: int = 20) -> pd.DataFrame:
+def obter_ultimos_leads(limite) -> pd.DataFrame:
     """Recupera os últimos leads prospectados do banco de dados."""
     try:
         db = DatabaseConnection(Config.DATABASE_PATH)
@@ -142,7 +138,7 @@ def contar_leads_total() -> int:
 def configurar_interface():
     """Configura a interface visual da aplicação."""
     st.set_page_config(
-        page_title="CDKTECK Command Center - Hunter",
+        page_title="HunterTeck",
         page_icon="🚀",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -182,7 +178,7 @@ def main():
     
     # Título principal
     st.markdown(
-        "<h1 style='text-align: center;'>🚀 CDKTECK Command Center - Módulo Hunter</h1>",
+        "<h1 style='text-align: center;'>🚀 HunterTeck </h1>",
         unsafe_allow_html=True
     )
     st.markdown(
@@ -199,21 +195,50 @@ def main():
     with st.sidebar:
         st.header("⚙️ Configuração da Campanha")
         
-        # Seleção de alvo da campanha
-        alvo_campanha: str = st.selectbox(
-            label="🎯 Selecione o Alvo da Campanha",
-            options=list(MAPEAMENTO_CAMPANHAS.keys()),
-            help="Escolha qual segmento de mercado será prospeccionado"
+        # Seleção de Produto
+        produto_alvo: str = st.selectbox(
+            label="🎯 Selecione a Aplicação",
+            options=list(MAPEAMENTO_PRODUTOS.keys()),
+            help="Escolha qual aplicação será o alvo da prospecção"
         )
         
-        # Recuperar configurações da campanha
-        config_campanha = MAPEAMENTO_CAMPANHAS[alvo_campanha]
+        # Recuperar campanhas do produto e exibir seleção
+        campanhas_do_produto = MAPEAMENTO_PRODUTOS[produto_alvo]
+        
+        # Localidade Dinâmica (livre para qualquer parte do mundo)
+        col_cid, col_est = st.columns([2, 1])
+        with col_cid:
+            alvo_cidade = st.text_input(
+                label="📍 Cidade Alvo",
+                value="Macaé",
+                placeholder="Qualquer cidade"
+            )
+        with col_est:
+            alvo_estado = st.text_input(
+                label="🗺️ Estado",
+                value="RJ",
+                placeholder="Ex: RJ"
+            )
+        
+        executar_todas = st.checkbox("Executar TODAS as campanhas deste produto")
+        
+        if not executar_todas:
+            alvo_campanha: str = st.selectbox(
+                label="🎯 Selecione a Campanha Específica",
+                options=list(campanhas_do_produto.keys()),
+                help="Escolha qual segmento de mercado será prospeccionado"
+            )
+            config_campanha = campanhas_do_produto[alvo_campanha]
+        else:
+            alvo_campanha = "Todas as Campanhas"
+            
+        alvo_localidade = f"{alvo_cidade}, {alvo_estado}"
         
         st.markdown("---")
         
         # Volume de leads em batch
         volume_leads: int = st.slider(
-            label="📊 Volume de Leads (Batch)",
+            label="📊 Volume de Leads por Batch",
             min_value=5,
             max_value=50,
             value=20,
@@ -223,12 +248,46 @@ def main():
         
         st.markdown("---")
         
+        # Validação Rascunho / Disparo Automático
+        enviar_emails_automaticamente = st.checkbox(
+            "🚀 Disparar E-mails Automaticamente (MS7)",
+            value=False,
+            help="Se desmarcado, os e-mails serão apenas gerados para validação (Rascunho) e exibidos no painel."
+        )
+        
+        st.markdown("---")
+        
         # Exibir informações da campanha selecionada
-        st.subheader("📋 Detalhes da Campanha")
-        st.info(f"**Produto:** {config_campanha['produto']}\n\n"
-                f"**Query:** {config_campanha['query']}\n\n"
-                f"**Localização:** {config_campanha['cidade']}, {config_campanha['estado']}")
+        st.subheader("📋 Detalhes da Execução")
+        if executar_todas:
+            st.info(f"**Produto:** {produto_alvo}\n\n"
+                    f"**Modo:** TODAS as campanhas ({len(campanhas_do_produto)} segmentos)\n\n"
+                    f"**Localização Foco:** {alvo_localidade}")
+        else:
+            st.info(f"**Produto:** {produto_alvo}\n\n"
+                    f"**Query:** {config_campanha['query']}\n\n"
+                    f"**Localização Foco:** {alvo_localidade}")
     
+    # ========================================================================
+    # MODO ESTADO (DISPARO DE RASCUNHOS ATRASADO)
+    # ========================================================================
+    if "rascunhos_aprovados" not in st.session_state:
+        st.session_state["rascunhos_aprovados"] = []
+        
+    if st.session_state["rascunhos_aprovados"]:
+        st.warning("⚠️ Você possui e-mails em rascunho aguardando disparo!")
+        if st.button("🚀 CLIQUE AQUI PARA DISPARAR OS RASCUNHOS AGORA", type="primary"):
+            with st.spinner("Enviando rascunhos para o SMTP Zoho..."):
+                try:
+                    pipeline = PipelineAutonomoB2B()
+                    resultado_smtp = pipeline._executar_disparo_emails(st.session_state["rascunhos_aprovados"])
+                    st.success(f"Disparo concluído: {resultado_smtp.get('enviados', 0)} enviados, {resultado_smtp.get('falhas', 0)} falhas.")
+                    st.session_state["rascunhos_aprovados"] = []  # Limpa os rascunhos
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao disparar rascunhos: {str(e)}")
+        st.divider()
+
     # ========================================================================
     # ÁREA PRINCIPAL
     # ========================================================================
@@ -240,7 +299,7 @@ def main():
         st.metric(label="📈 Total de Leads no BD", value=total_leads)
     
     with col2:
-        st.metric(label="🎯 Alvo desta Execução", value=config_campanha['produto'])
+        st.metric(label="🎯 Produto Alvo", value=produto_alvo)
     
     with col3:
         st.metric(label="📦 Volume de Batch", value=volume_leads)
@@ -263,42 +322,78 @@ def main():
     
     if botao_iniciar:
         try:
-            with st.spinner("⏳ Extraindo e enviando e-mails..."):
-                logger.info(
-                    f"Iniciando pipeline | "
-                    f"Campanha: {alvo_campanha} | "
-                    f"Produto: {config_campanha['produto']} | "
-                    f"Volume: {volume_leads}"
-                )
+            with st.spinner("⏳ Processando fila de extração e disparo..."):
+                logger.info(f"Iniciando pipeline | Produto: {produto_alvo} | Volume: {volume_leads}")
                 
-                # Instanciar e executar pipeline
                 pipeline = PipelineAutonomoB2B()
                 
-                resultado = pipeline.executar_pipeline_completo(
-                    query=config_campanha['query'],
-                    cidade=config_campanha['cidade'],
-                    estado=config_campanha['estado'],
-                    limite_leads=volume_leads,
-                    gerar_emails=True
-                )
+                # Montar lista de execuções
+                combinacoes = []
+                if executar_todas:
+                    for nome_camp, conf in campanhas_do_produto.items():
+                        combinacoes.append((nome_camp, conf, alvo_cidade, alvo_estado))
+                else:
+                    combinacoes.append((alvo_campanha, config_campanha, alvo_cidade, alvo_estado))
                 
-                # Extrair métricas de sucesso
-                etapa_extracao = resultado.get('etapas', {}).get('extracao', {})
-                total_enviados = etapa_extracao.get('total_leads', 0)
+                total_enviados_global = 0
+                resultados_globais = []
                 
-                # Exibir sucesso
+                # Executar fila
+                for nome_campanha_atual, config_atual, cid_atual, est_atual in combinacoes:
+                    st.toast(f"Prospecção: {nome_campanha_atual} em {cid_atual}...")
+                    logger.info(f"Executando -> {nome_campanha_atual} em {cid_atual}")
+                    
+                    resultado = pipeline.executar_pipeline_completo(
+                        query=config_atual['query'],
+                        cidade=cid_atual,
+                        estado=est_atual,
+                        limite_leads=volume_leads,
+                        gerar_emails=True,
+                        disparar_emails=enviar_emails_automaticamente
+                    )
+                    
+                    etapa_extracao = resultado.get('etapas', {}).get('extracao', {})
+                    enviados_agora = etapa_extracao.get('total_leads', 0)
+                    total_enviados_global += enviados_agora
+                    resultados_globais.append(resultado)
+                
+                # Exibir sucesso e dashboard
                 st.divider()
                 
-                if total_enviados > 0:
+                if total_enviados_global > 0:
                     st.success(
-                        f"✅ Prospecção concluída com sucesso!\n\n"
-                        f"📧 **{total_enviados}** e-mails disparados"
+                        f"✅ Prospecção em lote concluída com sucesso!\n\n"
+                        f"📧 **{total_enviados_global}** contatos abordados"
                     )
                     
                     # Exibir tabela de leads prospectados
                     st.subheader("📊 Últimas Empresas Prospectadas")
                     
-                    df_leads = obter_ultimos_leads(limite=volume_leads + 10)
+                    # Mostrar e-mails gerados em rascunho se disparar_emails foi falso
+                    if not enviar_emails_automaticamente:
+                        st.warning("📥 MODO RASCUNHO ATIVO: Os e-mails abaixo foram gerados, mas NÃO foram enviados pelo SMTP.")
+                        st.subheader("📝 Rascunhos Gerados (Validação)")
+                        import streamlit.components.v1 as components
+                        
+                        todos_rascunhos = []
+                        
+                        for idx, res in enumerate(resultados_globais):
+                            emails_do_lote = res.get('etapas', {}).get('emails', {}).get('emails', [])
+                            for email in emails_do_lote:
+                                if email.get('destinatario_email'):
+                                    todos_rascunhos.append(email)
+                                    with st.expander(f"📧 E-mail para: {email.get('destinatario_nome', 'Desconhecido')} ({email.get('destinatario_email', '')})"):
+                                        st.write(f"**Assunto:** {email.get('assunto', '')}")
+                                        components.html(email.get('corpo', ''), height=300, scrolling=True)
+                        
+                        if todos_rascunhos:
+                            st.session_state["rascunhos_aprovados"] = todos_rascunhos
+                            st.info("⬆️ Role para o topo da página para disparar esses rascunhos!")
+                            
+                        st.divider()
+
+                    # Para obter leads, pedimos (volume_leads * num_combinacoes) do banco
+                    df_leads = obter_ultimos_leads(limite=(volume_leads * len(combinacoes)) + 10)
                     
                     if not df_leads.empty:
                         st.dataframe(
@@ -310,9 +405,9 @@ def main():
                         # Opção de download
                         csv_data = df_leads.to_csv(index=False, encoding='utf-8-sig')
                         st.download_button(
-                            label="📥 Baixar Leads (CSV)",
+                            label="📥 Baixar Leads Abordados (CSV)",
                             data=csv_data,
-                            file_name=f"leads_{alvo_campanha.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            file_name=f"leads_{produto_alvo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                             mime="text/csv"
                         )
                     else:
@@ -320,29 +415,28 @@ def main():
                 else:
                     st.warning(
                         "⚠️ Nenhum lead foi prospectado. "
-                        "Verifique os logs para mais informações."
+                        "Verifique os logs ou os limites de API."
                     )
                 
-                # Exibir resumo detalhado
-                st.subheader("📋 Resumo Detalhado da Execução")
+                # Exibir resumo detalhado acumulado
+                st.subheader("📋 Métricas Acumuladas da Execução")
                 
                 col_resumo1, col_resumo2 = st.columns(2)
                 
+                total_validados = 0
+                total_pessoas = 0
+                for res in resultados_globais:
+                    etapas = res.get('etapas', {})
+                    total_validados += len(etapas.get('validacao', {}).get('leads_validos', []))
+                    total_pessoas += len(etapas.get('pessoas', {}).get('pessoas', []))
+                
                 with col_resumo1:
-                    etapa_validacao = resultado.get('etapas', {}).get('validacao', {})
-                    st.metric(
-                        "Leads Validados",
-                        len(etapa_validacao.get('leads_validos', []))
-                    )
+                    st.metric("Total de Leads Validados", total_validados)
                 
                 with col_resumo2:
-                    etapa_pessoas = resultado.get('etapas', {}).get('pessoas', {})
-                    st.metric(
-                        "Pessoas Encontradas",
-                        len(etapa_pessoas.get('pessoas', []))
-                    )
+                    st.metric("Total de Executivos Encontrados", total_pessoas)
                 
-                logger.info(f"Pipeline finalizado com sucesso. Total: {total_enviados} leads")
+                logger.info(f"Pipeline batch finalizado com sucesso.")
         
         except Exception as e:
             logger.error(f"Erro durante execução do pipeline: {e}")
@@ -359,7 +453,7 @@ def main():
     
     with st.expander("ℹ️ Sobre o Command Center"):
         st.markdown("""
-        ### CDKTECK Command Center - Módulo Hunter
+        ### HunterTeck
         
         Este painel foi desenvolvido para facilitar a execução do pipeline de prospecção B2B
         sem necessidade de hardcoding ou manipulação de código.

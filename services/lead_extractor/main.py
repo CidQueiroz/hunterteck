@@ -138,15 +138,17 @@ class PipelineExtracao:
         self,
         ramo: str,
         cidade: str,
-        estado: str
+        estado: str,
+        limite: int = 10
     ) -> List[Empresa]:
         """
-        Extrai leads usando API de demonstração (sem custos).
+        Extrai leads usando API de demonstração ou DuckDuckGo.
         
         Args:
             ramo: Categoria de negócio
             cidade: Cidade
             estado: Estado
+            limite: Limite de leads a extrair
             
         Returns:
             Lista de empresas de demonstração
@@ -157,7 +159,8 @@ class PipelineExtracao:
             empresas = extrator.extrair(
                 ramo=ramo,
                 cidade=cidade,
-                estado=estado
+                estado=estado,
+                limite=limite
             )
             logger.info(f"Extração API Demo completada: {len(empresas)} leads")
             return empresas

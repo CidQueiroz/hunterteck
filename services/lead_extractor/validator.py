@@ -105,11 +105,13 @@ class ValidadorLeads:
                 erros.append("Website parece ser placeholder/parked")
         
         # Validar email (se fornecido)
-        if empresa.email:
-            if not re.match(self.regras.PATTERN_EMAIL, empresa.email):
+        if empresa.email and str(empresa.email).strip() not in ("", "-", "—"):
+            if "@" not in str(empresa.email):
+                erros.append("Email sem o caractere '@'")
+            elif not re.match(self.regras.PATTERN_EMAIL, str(empresa.email)):
                 erros.append("Email não é válido")
             else:
-                dominio_email = empresa.email.split('@')[1]
+                dominio_email = str(empresa.email).split('@')[1]
                 if dominio_email in self.regras.EXTENSOES_DESCARTAVEIS:
                     erros.append("Email pessoal, não corporativo")
         
@@ -206,13 +208,7 @@ class ValidadorLeads:
         Returns:
             Empresa enriquecida
         """
-        # Se não tem email, tentar extrair domínio e gerar email genérico
-        if not empresa.email:
-            dominio = self._extrair_dominio(empresa.website)
-            # Comum: contato@, info@, hello@
-            empresa.email = f"info@{dominio}"
-        
-        # Se não tem ramo, deuzir da fonte ou deixar genérico
+        # Se não tem ramo, deduzir da fonte ou deixar genérico
         if not empresa.ramo or empresa.ramo == 'geral':
             empresa.ramo = 'Serviços'
         

@@ -17,6 +17,9 @@ from services.lead_extractor.enricher import EnriquecedorDados
 from services.lead_extractor.person_finder import LocalizadorPessoas, Pessoa
 from services.lead_extractor.email_generator import GeradorEmails, ContextoEmail, TipoEmail
 from services.lead_extractor.models import Empresa, LeadStatus
+from services.lead_extractor.smtp_dispatcher import DispachadorSMTPProdutos
+from services.lead_extractor.config import Config
+from services.lead_extractor.product_matcher import match_cdkteck_product
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +40,7 @@ class PipelineAutonomoB2B:
         self.enriquecedor = EnriquecedorDados()
         self.finder = LocalizadorPessoas()
         self.gerador_emails = GeradorEmails()
+        self.dispatcher = DispachadorSMTPProdutos(Config.SMTP_CONFIG)
         
         logger.info("✅ Todos os microsserviços inicializados")
     
@@ -46,7 +50,8 @@ class PipelineAutonomoB2B:
         cidade: str,
         estado: str,
         limite_leads: int = 50,
-        gerar_emails: bool = True
+        gerar_emails: bool = True,
+        disparar_emails: bool = True
     ) -> Dict[str, Any]:
         """
         Executa o pipeline completo do Lead Generation até Email Generation.
@@ -100,6 +105,10 @@ class PipelineAutonomoB2B:
         if not leads_validos:
             logger.warning("❌ Nenhum lead passou na validação!")
             return resultado_final
+            
+        # NOVA ETAPA: Salvar no banco APENAS os Leads Válidos e não duplicados
+        logger.info("\n💾 [ETAPA 2.5] Persistindo novos leads validados...")
+        self.extrator.persistir_leads(leads_validos)
         
         # MS3: Enriquecimento de Dados
         logger.info("\n🔍 [ETAPA 3/5] MS3 - ENRIQUECIMENTO DE DADOS")
@@ -117,7 +126,7 @@ class PipelineAutonomoB2B:
         
         # MS6: Geração de Emails
         if gerar_emails and pessoas_encontradas:
-            logger.info("\n📧 [ETAPA 5/5] MS6 - GERAÇÃO DE EMAILS INTELIGENTES")
+            logger.info("\n📧 [ETAPA 5/6] MS6 - GERAÇÃO DE EMAILS INTELIGENTES")
             logger.info("-"*80)
             etapa_emails = self._executar_geracao_emails(
                 pessoas_encontradas,
@@ -125,6 +134,18 @@ class PipelineAutonomoB2B:
                 etapa_enriquecimento['dados_enriquecidos']
             )
             resultado_final['etapas']['emails'] = etapa_emails
+            
+            # MS7: Disparo de Emails
+            if disparar_emails:
+                logger.info("\n🚀 [ETAPA 6/6] MS7 - DISPARO DE EMAILS")
+                logger.info("-"*80)
+                etapa_disparo = self._executar_disparo_emails(etapa_emails['emails'])
+                resultado_final['etapas']['disparo'] = etapa_disparo
+            else:
+                logger.info("\n🚀 [ETAPA 6/6] MS7 - DISPARO DE EMAILS pulado (disparar_emails=False)")
+                resultado_final['etapas']['disparo'] = {
+                    'status': 'pulado', 'enviados': 0, 'falhas': 0, 'resultados': []
+                }
         
         # Resumo final
         logger.info("\n" + "="*80)
@@ -149,18 +170,18 @@ class PipelineAutonomoB2B:
             leads = self.extrator.extrair_com_api_demo(
                 ramo=query,
                 cidade=cidade,
-                estado=estado
+                estado=estado,
+                limite=limite
             )
             
-            # Persistir no banco
-            resultado = self.extrator.persistir_leads(leads)
+            # A persistência agora ocorre APÓS a validação (MS2)
             
             return {
                 'status': 'sucesso',
                 'total_leads': len(leads),
-                'persistidos': resultado['sucesso'],
+                'persistidos': 0,
                 'leads': leads,
-                'detalhes': resultado
+                'detalhes': {}
             }
         
         except Exception as e:
@@ -226,12 +247,13 @@ class PipelineAutonomoB2B:
         try:
             todas_pessoas = []
             
-            for empresa in leads[:10]:  # Limitar a 10 para demo
+            for empresa in leads:
                 dominio = self._extrair_dominio(empresa.website)
                 pessoas = self.finder.encontrar_decisores(
                     empresa_nome=empresa.nome,
                     dominio_website=dominio,
-                    setor=empresa.ramo
+                    setor=empresa.ramo,
+                    email_empresa=empresa.email
                 )
                 todas_pessoas.extend(pessoas)
             
@@ -262,16 +284,29 @@ class PipelineAutonomoB2B:
         leads: List[Empresa],
         dados_enriquecidos: List[Any]
     ) -> Dict[str, Any]:
-        """MS6: Geração de emails."""
+        """MS6: Geração de emails inteligentemente alinhada com os produtos."""
         logger.info(f"Gerando emails personalizados para {len(pessoas)} pessoas...")
         
         try:
+            from services.lead_extractor.product_matcher import match_cdkteck_product
             emails_gerados = []
             
             # Map de lead por nome de empresa
             leads_map = {lead.nome: lead for lead in leads}
             
-            for pessoa in pessoas[:20]:  # Limitar para demo
+            # --- CORTE RÍGIDO (GUILHOTINA FINAL) ANTES DE GASTAR TOKENS DA IA ---
+            pessoas_com_email = []
+            for pessoa in pessoas:
+                if pessoa.email and str(pessoa.email).strip() not in ("", "-", "—") and "@" in str(pessoa.email):
+                    pessoas_com_email.append(pessoa)
+                else:
+                    logger.warning(f"❌ Lead Descartado: {pessoa.nome} na {pessoa.empresa_nome} (Motivo: Sem email válido para disparo)")
+                    
+            if not pessoas_com_email:
+                logger.warning("🚫 Nenhum lead sobreviveu à Guilhotina Final (todos sem email). Cancelando MS6/MS7.")
+                return {'status': 'sucesso', 'emails': [], 'total': 0, 'mensagem': 'Nenhum email válido encontrado.'}
+            
+            for pessoa in pessoas_com_email:
                 # Encontrar lead correspondente
                 lead = leads_map.get(pessoa.empresa_nome)
                 if not lead:
@@ -283,24 +318,47 @@ class PipelineAutonomoB2B:
                     None
                 )
                 
+                # Determinar o produto ANTES de gerar o email
+                text_to_analyze = (lead.ramo or "Empresa") + " " + (dado_enriquecido.num_funcionarios if dado_enriquecido and dado_enriquecido.num_funcionarios else "PME")
+                try:
+                    match_result = match_cdkteck_product(lead_niche=lead.ramo, lead_summary=text_to_analyze)
+                    nome_produto = match_result.get('produto', 'PapoDados')
+                    proposta = match_result.get('proposta_valor', 'extrair insights através de Inteligência Artificial')
+                except Exception:
+                    nome_produto = "PapoDados"
+                    proposta = "tomar melhores decisões baseadas em dados"
+
+                email_vendedor = f"{nome_produto.lower()}@cdkteck.com.br"
+                
                 # Construir contexto
                 contexto = ContextoEmail(
                     nome_pessoa=pessoa.nome,
                     cargo_pessoa=pessoa.cargo,
                     empresa_nome=lead.nome,
                     setor_empresa=lead.ramo,
+                    empresa_vendedora_nome=f"Time {nome_produto}",
                     tamanho_empresa=dado_enriquecido.num_funcionarios if dado_enriquecido else None,
                     receita_empresa=dado_enriquecido.receita_anual if dado_enriquecido else None,
                     website_empresa=self._extrair_dominio(lead.website),
-                    valor_proposto="aumentar eficiência operacional",
+                    valor_proposto=proposta,
                     tipo_email=TipoEmail.PRIMEIRO_CONTATO,
-                    vendedor_nome="Time de Vendas",
-                    vendedor_email="vendas@ourcompany.com"
+                    vendedor_nome="Cidirclay Queiroz",
+                    vendedor_email=email_vendedor,
+                    cta_url=f"https://{nome_produto.lower()}.cdkteck.com.br"
                 )
                 contexto.destinatario_email = pessoa.email
                 
                 # Gerar email
                 email = self.gerador_emails.gerar_email(contexto, usar_ia=False)
+                
+                # Renderizar HTML com Assinatura ANTES da exibição na UI
+                from services.lead_extractor.smtp_dispatcher import ZOHO_SIGNATURE_HTML
+                corpo_bruto = email.corpo
+                if "<" not in corpo_bruto or ">" not in corpo_bruto:
+                    corpo_bruto = corpo_bruto.replace('\n', '<br>')
+                
+                email.corpo = f"<html><body>{corpo_bruto}{ZOHO_SIGNATURE_HTML}</body></html>"
+                
                 emails_gerados.append(email.to_dict())
             
             logger.info(f"✓ {len(emails_gerados)} emails gerados")
@@ -314,6 +372,46 @@ class PipelineAutonomoB2B:
         except Exception as e:
             logger.error(f"Erro na geração de emails: {e}")
             return {'status': 'erro', 'mensagem': str(e), 'emails': []}
+    
+    def _executar_disparo_emails(self, emails_gerados: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """MS7: Disparo de emails usando SMTP Dispatcher."""
+        logger.info(f"Disparando {len(emails_gerados)} emails em lote...")
+        
+        try:
+            lote_para_disparo = []
+            for email_dados in emails_gerados:
+                # Determinar o produto a partir do destinatário e metadados contextuais
+                text_to_analyze = email_dados.get('assunto', '') + " " + email_dados.get('corpo', '')
+                try:
+                    match_result = match_cdkteck_product(lead_niche="B2B Generic", lead_summary=text_to_analyze)
+                    nome_produto = match_result.get('produto')
+                except Exception:
+                    nome_produto = None
+                
+                lote_para_disparo.append({
+                    'destinatario': email_dados.get('destinatario_email', ''),
+                    'assunto': email_dados.get('assunto', ''),
+                    'corpo_html': email_dados.get('corpo', ''),
+                    'corpo_texto': email_dados.get('corpo', ''),
+                    'produto_selecionado': nome_produto
+                })
+            
+            resultados = self.dispatcher.disparar_lote(lote_para_disparo, parar_em_erro=False)
+            
+            sucessos = sum(1 for r in resultados if r.sucesso)
+            
+            logger.info(f"✓ {sucessos} de {len(resultados)} emails enviados com sucesso")
+            
+            return {
+                'status': 'sucesso',
+                'enviados': sucessos,
+                'falhas': len(resultados) - sucessos,
+                'resultados': [r.to_dict() for r in resultados]
+            }
+        
+        except Exception as e:
+            logger.error(f"Erro no disparo de emails: {e}")
+            return {'status': 'erro', 'mensagem': str(e), 'enviados': 0, 'falhas': len(emails_gerados)}
     
     def _exibir_resumo(self, resultado: Dict[str, Any]):
         """Exibe resumo final do pipeline."""
@@ -359,9 +457,22 @@ class PipelineAutonomoB2B:
             eml = etapas['emails']
             print(f"\n✅ [MS6] GERAÇÃO DE EMAILS")
             print(f"   Emails gerados: {eml.get('total', 0)}")
+            
+        # Disparo
+        if 'disparo' in etapas:
+            disp = etapas['disparo']
+            print(f"\n🚀 [MS7] DISPARO SMTP")
+            print(f"   Emails enviados: {disp.get('enviados', 0)}")
+            print(f"   Falhas SMTP: {disp.get('falhas', 0)}")
+        
+        # Checar se houve algum erro crítico no pipeline
+        teve_erro = any(etapa.get('status') == 'erro' for etapa in etapas.values() if isinstance(etapa, dict))
         
         print("\n" + "="*80)
-        print("🎉 PIPELINE EXECUTADO COM SUCESSO!")
+        if teve_erro:
+            print("⚠️ PIPELINE FINALIZADO COM FALTAS/ERROS.")
+        else:
+            print("🎉 PIPELINE EXECUTADO COM SUCESSO!")
         print("="*80 + "\n")
     
     @staticmethod

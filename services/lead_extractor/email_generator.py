@@ -188,9 +188,7 @@ Estou ajudando empresas como {empresa} a {valor_proposto}.
 
 {pain_points_text}
 
-Seria interessante uma conversa de 15min para explorar?
-
-{assinatura}"""
+Seria interessante uma conversa de 15min para explorar?"""
         },
         
         TipoEmail.SEGUIMENTO_1: {
@@ -207,9 +205,7 @@ Entendo que você está ocupado, mas achei que essa oportunidade poderia valer s
 
 {valor_proposto}
 
-Tem 15min disponível essa semana?
-
-{assinatura}"""
+Tem 15min disponível essa semana?"""
         },
         
         TipoEmail.REENGAJAMENTO: {
@@ -225,9 +221,7 @@ Esta é minha última mensagem - prometo!
 Muitas empresas em {setor} estão vendo resultados com nossa solução.
 Se {empresa} tiver interesse, vamos conversar.
 
-Caso contrário, sem problemas - aproveito para desejar sucesso em seus projetos!
-
-{assinatura}"""
+Caso contrário, sem problemas - aproveito para desejar sucesso em seus projetos!"""
         }
     }
     
@@ -431,8 +425,7 @@ Caso contrário, sem problemas - aproveito para desejar sucesso em seus projetos
             'empresa': contexto.empresa_nome,
             'setor': contexto.setor_empresa,
             'valor_proposto': contexto.valor_proposto or 'aumentar sua eficiência',
-            'pain_points_text': pain_points_text,
-            'assinatura': self._gerar_assinatura(contexto)
+            'pain_points_text': pain_points_text
         }
         
         # Interpolação
@@ -470,7 +463,7 @@ Caso contrário, sem problemas - aproveito para desejar sucesso em seus projetos
                 prompt, system_prompt = self._construir_prompt_com_product_match(contexto)
             else:
                 prompt = self._construir_prompt(contexto)
-                system_prompt = "Você é um especialista em vendas B2B que escreve emails curtos, persuasivos e personalizados. Sempre responda em JSON com campos 'assunto' e 'corpo'."
+                system_prompt = "Você é um especialista em vendas B2B que escreve emails curtos, persuasivos e personalizados. Sempre responda em JSON com campos 'assunto' e 'corpo'. PROIBIDO gerar saudações finais, despedidas (ex: Abraços, Atenciosamente) ou assinaturas. NÃO invente nomes de remetentes ou e-mails. Gere ESTRITAMENTE os parágrafos do corpo do e-mail focados na dor do cliente (AIDA)."
             
             response = self.openai.ChatCompletion.create(
                 model="gpt-4",
@@ -737,19 +730,16 @@ Regras:
         - Include call-to-action claro
         - Personalize com dados disponíveis
         - Português brasileiro
+        - PROIBIDO gerar saudações finais, despedidas (ex: Abraços, Atenciosamente) ou assinaturas.
+        - NÃO invente nomes de remetentes ou e-mails.
+        - Gere ESTRITAMENTE os parágrafos do corpo do e-mail focados na dor do cliente.
         """
     
     @staticmethod
     def _gerar_assinatura(contexto: ContextoEmail) -> str:
         """Gera assinatura do email."""
-        return f"""
-Abraços,
+        return ""
 
-{contexto.vendedor_nome}
-{contexto.empresa_vendedora_nome}
-{contexto.vendedor_email}
-
-P.S. - Leia sobre como empresas em {contexto.setor_empresa} estão crescendo: [link]"""
 
 
 # Exemplo de uso

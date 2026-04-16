@@ -6,6 +6,11 @@ Gerencia variáveis de ambiente e parâmetros de execução.
 import os
 from typing import Optional
 from pathlib import Path
+from dotenv import load_dotenv
+
+from .smtp_dispatcher import ConfiguracaoSMTP
+
+load_dotenv()
 
 
 class Config:
@@ -42,6 +47,17 @@ class Config:
     # APIs e serviços externos
     GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY")
     LINKEDIN_API_KEY: Optional[str] = os.getenv("LINKEDIN_API_KEY")
+    HUNTER_API_KEY: Optional[str] = os.getenv("HUNTER_API_KEY")
+    APOLLO_API_KEY: Optional[str] = os.getenv("APOLLO_API_KEY")
+    
+    # Configurações SMTP
+    SMTP_CONFIG = ConfiguracaoSMTP(
+        host=os.getenv("SMTP_HOST", "smtp.zoho.com"),
+        porta=int(os.getenv("SMTP_PORT", "587")),
+        usar_tls=os.getenv("SMTP_USE_TLS", "True").lower() == "true",
+        email_admin=os.getenv("SMTP_USER", ""),
+        senha_admin=os.getenv("SMTP_PASSWORD", ""),
+    )
     
     @classmethod
     def validar(cls) -> None:

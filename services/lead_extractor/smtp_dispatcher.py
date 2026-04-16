@@ -140,6 +140,75 @@ class ResultadoDisparo:
         }
 
 
+ZOHO_SIGNATURE_HTML = """
+<br>
+<br>
+<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif">
+    <tbody>
+        <tr>
+            <td width="4" style="background-color:rgb(255, 140, 0)">
+                <br>
+            </td>
+            <td width="15">
+                <br>
+            </td>
+            <td valign="middle">
+                <img src="https://cdkteck.com.br/assets/favicon.png" alt="CDK TECK" width="80" style="display:block; border:none">
+            </td>
+            <td width="15">
+                <br>
+            </td>
+            <td valign="middle">
+                <div>
+                    <span class="colour" style="color:rgb(0, 0, 0)">
+                        <b>
+                            <span class="size" style="font-size:18px">
+                                Cidirclay Queiroz
+                            </span>
+                        </b>
+                    </span>
+                    <br>
+                </div>
+                <div>
+                    <span class="colour" style="color:rgb(85, 85, 85)">
+                        <span class="size" style="font-size:14px">
+                            CDK TECK Soluções Tecnológicas
+                        </span>
+                    </span>
+                    <br>
+                </div>
+                <div>
+                    <br>
+                </div>
+                <div style="height:8px">
+                    <br>
+                </div>
+                <div>
+                    <span class="size" style="font-size:12px">
+                        <a href="https://www.cdkteck.com.br" style="color:rgb(0, 174, 239); text-decoration:none; font-weight:bold" target="_blank">
+                            www.cdkteck.com.br
+                        </a>
+                        <span class="colour" style="color:rgb(153, 153, 153)">
+                            &nbsp;|&nbsp;Macaé - RJ
+                        </span>
+                    </span>
+                    <br>
+                </div>
+            </td>
+            <td width="15">
+                <br>
+            </td>
+            <td width="4" style="background-color:rgb(0, 229, 255)">
+                <br>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div>
+    <br>
+</div>
+"""
+
 class DispachadorSMTPProdutos:
     """
     Dispachador SMTP com roteamento dinâmico baseado em produtos.
@@ -245,15 +314,18 @@ class DispachadorSMTPProdutos:
         
         logger.debug(f"Header List-Unsubscribe adicionado para {destinatario}: {list_unsubscribe_header}")
         
+        # O corpo_html já vem montado e renderizado do MS6.
+        corpo_html_completo = corpo_html
+        
         # Se não tiver texto plano, criar versão simplificada do HTML
         if not corpo_texto:
             # Remover tags HTML simples
             import re
-            corpo_texto = re.sub('<[^<]+?>', '', corpo_html)
+            corpo_texto = re.sub('<[^<]+?>', '', corpo_html_completo)
         
         # Attach alternativas (texto primeiro, depois HTML)
         msg.attach(MIMEText(corpo_texto, 'plain', 'utf-8'))
-        msg.attach(MIMEText(corpo_html, 'html', 'utf-8'))
+        msg.attach(MIMEText(corpo_html_completo, 'html', 'utf-8'))
         
         return msg
     
