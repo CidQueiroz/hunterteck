@@ -1,0 +1,25 @@
+# ==============================================================================
+# Trecho para adicionar ao seu docker-compose.yml existente (ex: em hunterteck)
+# Adicione este bloco dentro da seção "services:"
+# ==============================================================================
+
+  telegram-vagas:
+    build:
+      context: ./services/telegram-vagas-bot
+      dockerfile: Dockerfile
+    container_name: telegram-vagas-bot
+    restart: unless-stopped
+    volumes:
+      # Persiste o banco de dados (SQLite) e o arquivo de sessão do Pyrogram (.session)
+      - ./data/telegram-vagas:/app/data
+    environment:
+      # Pode passar direto ou mapear variáveis do .env do host
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - BOT_TOKEN=${BOT_TOKEN}
+      - MEU_USER_ID=${MEU_USER_ID}
+      - CHAT_IDS=${CHAT_IDS}
+    env_file:
+      # Alternativamente, aponte diretamente para o .env do microserviço
+      - ./services/telegram-vagas-bot/.env
