@@ -60,3 +60,6 @@ logs/
 # Sistema
 .DS_Store
 Thumbs.db
+data/meu_userbot.session
+data/meu_userbot.session-journal
+data/vagas.db

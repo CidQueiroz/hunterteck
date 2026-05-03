@@ -57,32 +57,41 @@ except ValueError:
 # ==========================================
 # Pré-Filtro Lexical e Prompt Groq
 # ==========================================
+# Lista de palavras-chave para o Pré-Filtro (em minúsculas para facilitar a busca)
 KEYWORDS = [
-    # 1. Gatilhos Universais de Emprego (PT/EN/ES)
-    "vaga", "vagas", "oportunidade", "hiring", "job", "recrutamento", "seleção", 
-    "we are hiring", "procuramos", "contrata-se", "buscamos", "temos vaga", "open role", "position",
-    "vacante", "vacantes", "oferta de empleo", "contratación", "puesto", "empleo", "búsqueda", "buscando",
+    # 1. Gatilhos Universais de Emprego (Português, Inglês e Espanhol)
+    "vaga", "vagas", "oportunidade", "hiring", "job", "recrutamento", 
+    "seleção", "we are hiring", "procuramos", "contrata-se", "buscamos", 
+    "temos vaga", "open role", "position", "oferta", "empleo", "vacante", 
+    "se busca", "buscamos", "unete a nuestro equipo",
     
-    # 2. Modalidade e Contrato (PT/EN/ES)
-    "remoto", "remote", "home office", "híbrido", "hybrid", "clt", "pj", "b2b", 
-    "freelance", "contract", "usd", "dólar", "dolar", "eur", "teletrabajo", 
+    # 2. Modalidade e Contrato
+    "remoto", "remote", "home office", "híbrido", "hybrid", "hibrido", 
+    "clt", "pj", "b2b", "freelance", "contract", "usd", "dólar", "dolar", 
+    "eur", "euros", 
     
-    # 3. Níveis de Senioridade (PT/EN/ES)
-    "pleno", "mid", "mid-level", "pl", "sênior", "senior", "sr", "staff", "principal", "lead", "especialista",
+    # 3. Níveis de Senioridade
+    "júnior", "junior", "jr", "pleno", "mid", "mid-level", "pl", 
+    "sênior", "senior", "sr", "staff", "principal", "lead", "especialista",
     
-    # 4. Perfil 1: Arquitetura Cloud, DevOps e IA
-    "arquiteto", "architect", "arquitecto", "cloud", "aws", "gcp", "oci", "oracle", "azure", 
-    "devops", "mlops", "llm", "rag", "machine learning", "inteligência artificial", "inteligencia artificial", 
-    "ai", "ia", "docker", "terraform", "ci/cd",
+    # 4. Perfil 1: Arquitetura Cloud, DevOps e IA (High-End)
+    "arquiteto", "architect", "arquitecto", "cloud", "aws", "gcp", "oci", 
+    "oracle", "azure", "devops", "mlops", "llm", "rag", "machine learning", 
+    "inteligência artificial", "ai", "ia", "docker", "terraform", "ci/cd", 
+    "desarrollador", "developer", "ingeniero", "engineer", "software",
     
     # 5. Perfil 2: Dados (Data Science, Data Eng, BI)
-    "dados", "datos", "data", "cientista", "científico", "scientist", "engenheiro de dados", "ingeniero de datos", "data engineer", 
-    "analista", "analyst", "business intelligence", "bi", "power bi", "powerbi", 
-    "etl", "sql", "python", "big data", "pandas", "scraping", "rpa",
+    "dados", "data", "datos", "cientista", "scientist", "científico", 
+    "engenheiro de dados", "data engineer", "ingeniero de datos", 
+    "analista", "analyst", "business intelligence", "bi", "power bi", 
+    "powerbi", "etl", "sql", "plsql", "python", "big data", "pandas", 
+    "scraping", "rpa", "dba",
     
-    # 6. Perfil 3: Suporte, Infra e TI Geral
-    "suporte", "soporte", "support", "helpdesk", "help desk", "service desk", "infraestrutura", "infraestructura",
-    "infra", "n1", "n2", "n3", "linux", "técnico de ti", "técnico de it", "tecnico", "sysadmin"
+    # 6. Perfil 3: Suporte, Infra e TI Geral (Acesso Rápido)
+    "suporte", "support", "soporte", "helpdesk", "help desk", "service desk", 
+    "infraestrutura", "infra", "infraestructura", "redes", "network", "n1", 
+    "n2", "n3", "windows server", "linux", "técnico de ti", "tecnico", 
+    "sysadmin"
 ]
 
 GROQ_SYSTEM_PROMPT = """Você é um assistente especializado em recrutamento de TI.

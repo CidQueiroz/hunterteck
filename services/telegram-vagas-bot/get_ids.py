@@ -20,9 +20,11 @@ async def listar_grupos():
         print("\n=== SEUS GRUPOS E CANAIS ===")
         # Pega as suas conversas
         async for dialog in app.get_dialogs():
-            time.sleep(5)
+            #time.sleep(5)
             # Agora usando os Enums oficiais da v2.0
             if dialog.chat.type in [ChatType.GROUP, ChatType.SUPERGROUP, ChatType.CHANNEL]:
+                #if dialog.chat.id == "Devs VAGAS":
+                    
                 print(f"Nome: {dialog.chat.title}")
                 print(f"ID:   {dialog.chat.id}\n")
 
